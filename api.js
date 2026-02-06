@@ -85,7 +85,7 @@ class NookAPI {
 
     // Authentication
     async login(phone, password) {
-        const response = await this.request('/staff/login', {
+        const response = await this.request('/waiter/login', {
             method: 'POST',
             body: JSON.stringify({
                 phone: phone,
@@ -105,7 +105,7 @@ class NookAPI {
 
     // Guest Management
     async identifyGuestByPhone(phoneNumber, restaurantId) {
-        return await this.request('/staff/identify-guest', {
+        return await this.request('/waiter/identify-guest', {
             method: 'POST',
             body: JSON.stringify({
                 phone_number: phoneNumber,
@@ -115,7 +115,7 @@ class NookAPI {
     }
 
     async scanQRCode(qrContent, restaurantId) {
-        return await this.request('/staff/scan-qr', {
+        return await this.request('/waiter/scan-qr', {
             method: 'POST',
             body: JSON.stringify({
                 qr_content: qrContent,
@@ -126,7 +126,7 @@ class NookAPI {
 
     // Visit Management
     async startVisit(guestId, restaurantId, tableNumber, partySize = 1, occasion = null) {
-        return await this.request('/staff/start-visit', {
+        return await this.request('/waiter/start-visit', {
             method: 'POST',
             body: JSON.stringify({
                 guest_id: guestId,
@@ -155,7 +155,7 @@ class NookAPI {
 
     // Tables and Staff
     async getMyTables(restaurantId) {
-        return await this.request(`/staff/my-tables?staff_id=${this.session.staff_id}&restaurant_id=${restaurantId}`);
+        return await this.request(`/waiter/my-tables?staff_id=${this.session.staff_id}&restaurant_id=${restaurantId}`);
     }
 
     // Offers

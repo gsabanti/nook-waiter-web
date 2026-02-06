@@ -18,28 +18,47 @@ class QRScanner {
     async initializeReader() {
         // Wait for ZXing library to load
         if (typeof ZXing === 'undefined') {
-            console.log('Waiting for ZXing library...');
+            console.log('⏳ Waiting for ZXing library to load...');
             setTimeout(() => this.initializeReader(), 100);
             return;
         }
 
+        console.log('📚 ZXing library loaded, initializing reader...');
+        console.log('Available ZXing objects:', Object.keys(ZXing));
+
         try {
-            // Create multiple format reader for better compatibility
+            // Try BrowserMultiFormatReader first
             this.codeReader = new ZXing.BrowserMultiFormatReader();
-            
-            // Test if reader is working
-            console.log('QR Scanner initialized successfully');
+            console.log('✅ QR Scanner initialized with BrowserMultiFormatReader');
             console.log('ZXing version:', ZXing.version || 'unknown');
             
         } catch (error) {
-            console.error('Failed to initialize QR scanner:', error);
+            console.error('❌ Failed to initialize BrowserMultiFormatReader:', error);
             
-            // Try alternative initialization
+            // Try alternative readers
             try {
                 this.codeReader = new ZXing.BrowserQRCodeReader();
-                console.log('QR Scanner initialized with QR-only reader');
+                console.log('✅ QR Scanner initialized with BrowserQRCodeReader');
             } catch (altError) {
-                console.error('All QR scanner initialization methods failed:', altError);
+                console.error('❌ Failed to initialize BrowserQRCodeReader:', altError);
+                
+                try {
+                    // Try direct reader creation
+                    this.codeReader = {
+                        decodeFromImageData: (imageData) => {
+                            const reader = new ZXing.MultiFormatReader();
+                            const luminanceSource = new ZXing.RGBLuminanceSource(
+                                imageData.data, imageData.width, imageData.height
+                            );
+                            const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+                            return reader.decode(binaryBitmap);
+                        }
+                    };
+                    console.log('✅ QR Scanner initialized with custom decoder');
+                } catch (customError) {
+                    console.error('❌ All QR scanner initialization methods failed:', customError);
+                    this.updateStatus('Ошибка инициализации сканера');
+                }
             }
         }
     }
@@ -143,62 +162,68 @@ class QRScanner {
             return;
         }
 
+        if (!this.codeReader) {
+            console.error('❌ QR Code reader not initialized');
+            return;
+        }
+
         try {
             const context = this.canvas.getContext('2d');
             
             // Draw current video frame to canvas
             context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             
-            // Get full canvas image data for better detection
+            // Get image data
             const imageData = context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            console.debug('🖼️ Canvas size:', this.canvas.width, 'x', this.canvas.height);
             
-            // Try to decode QR code using ZXing
+            // Try primary decode method
             try {
                 const result = this.codeReader.decodeFromImageData(imageData);
                 
                 if (result && result.text) {
+                    console.log('✅ QR Code detected (primary):', result.text);
                     this.updateStatus('QR-код найден!');
-                    console.log('QR Code detected:', result.text);
-                    
-                    // Stop scanning
                     this.stopScanning();
-                    
-                    // Callback with result
                     onQRDetected?.(result.text);
                     return;
                 }
             } catch (decodeError) {
-                // Try alternative method with luminance source
-                try {
+                // Not an error - just no QR code found
+                if (decodeError.name !== 'NotFoundException') {
+                    console.debug('🔍 Primary decode failed:', decodeError.message);
+                }
+            }
+            
+            // Try alternative method with ZXing primitives
+            try {
+                if (typeof ZXing.MultiFormatReader !== 'undefined') {
+                    const reader = new ZXing.MultiFormatReader();
                     const luminanceSource = new ZXing.RGBLuminanceSource(
                         imageData.data,
                         this.canvas.width,
                         this.canvas.height
                     );
                     const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
-                    const result = this.codeReader.decode(binaryBitmap);
+                    const result = reader.decode(binaryBitmap);
                     
                     if (result && result.text) {
+                        console.log('✅ QR Code detected (alternative):', result.text);
                         this.updateStatus('QR-код найден!');
-                        console.log('QR Code detected (alt method):', result.text);
-                        
-                        // Stop scanning
                         this.stopScanning();
-                        
-                        // Callback with result
                         onQRDetected?.(result.text);
                         return;
                     }
-                } catch (altError) {
-                    // Both methods failed, continue scanning
-                    if (altError.name !== 'NotFoundException' && altError.message !== 'No QR code found') {
-                        console.debug('QR decode attempt failed:', altError.message);
-                    }
+                }
+            } catch (altError) {
+                if (altError.name !== 'NotFoundException') {
+                    console.debug('🔍 Alternative decode failed:', altError.message);
                 }
             }
             
         } catch (error) {
-            console.error('QR scan frame error:', error);
+            console.error('❌ QR scan frame error:', error);
+            this.updateStatus('Ошибка сканирования: ' + error.message);
             onError?.(error);
         }
     }
