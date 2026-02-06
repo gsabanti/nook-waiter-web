@@ -82,31 +82,31 @@ class PhoneMask {
         return Math.round(newValue.length * ratio);
     }
 
-    // Normalize phone number for API calls
+    // Normalize phone number for API calls (without +)
     static normalizePhone(phone) {
         if (!phone) return '';
         
-        // Remove all non-digits except +
-        const cleaned = phone.replace(/[^\d+]/g, '');
+        // Remove all non-digits
+        const cleaned = phone.replace(/[^\d]/g, '');
         
-        // Convert different formats to +7XXXXXXXXXX
+        // Convert different formats to 7XXXXXXXXXX
         let normalized = cleaned;
         
-        // 8XXXXXXXXXX -> +7XXXXXXXXXX
+        // 8XXXXXXXXXX -> 7XXXXXXXXXX
         if (normalized.startsWith('8') && normalized.length === 11) {
-            normalized = '+7' + normalized.slice(1);
+            normalized = '7' + normalized.slice(1);
         }
-        // 7XXXXXXXXXX -> +7XXXXXXXXXX  
+        // +7XXXXXXXXXX -> 7XXXXXXXXXX (remove +)
         else if (normalized.startsWith('7') && normalized.length === 11) {
-            normalized = '+7' + normalized.slice(1);
+            normalized = normalized; // already correct
         }
-        // XXXXXXXXXX -> +7XXXXXXXXXX
-        else if (!normalized.startsWith('+7') && normalized.length === 10) {
-            normalized = '+7' + normalized;
+        // XXXXXXXXXX -> 7XXXXXXXXXX
+        else if (normalized.length === 10) {
+            normalized = '7' + normalized;
         }
         
         // Return normalized format or original if invalid
-        if (normalized.startsWith('+7') && normalized.length === 12) {
+        if (normalized.startsWith('7') && normalized.length === 11) {
             return normalized;
         }
         
@@ -128,7 +128,7 @@ class PhoneMask {
     // Validate phone number
     static isValid(phone) {
         const normalized = this.normalizePhone(phone);
-        return normalized.startsWith('+7') && normalized.length === 12 && /^\+7\d{10}$/.test(normalized);
+        return normalized.startsWith('7') && normalized.length === 11 && /^7\d{10}$/.test(normalized);
     }
 }
 
