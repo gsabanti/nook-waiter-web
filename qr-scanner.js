@@ -176,8 +176,8 @@ class QRScanner {
             // Get image data
             const imageData = context.getImageData(0, 0, this.canvas.width, this.canvas.height);
             
-            // Add periodic debug info (every 2 seconds)
-            if (!this.lastDebugTime || (Date.now() - this.lastDebugTime) > 2000) {
+            // Add periodic debug info (every 5 seconds)
+            if (!this.lastDebugTime || (Date.now() - this.lastDebugTime) > 5000) {
                 console.log('🔍 Scanning...', {
                     canvas: `${this.canvas.width}x${this.canvas.height}`,
                     video: `${this.video.videoWidth}x${this.video.videoHeight}`,
@@ -185,6 +185,31 @@ class QRScanner {
                     imageDataLength: imageData.data.length
                 });
                 this.lastDebugTime = Date.now();
+                
+                // Debug: Show what the canvas sees every 5 seconds
+                try {
+                    const debugCanvas = document.createElement('canvas');
+                    debugCanvas.width = 200;
+                    debugCanvas.height = 150;
+                    debugCanvas.style.position = 'fixed';
+                    debugCanvas.style.top = '10px';
+                    debugCanvas.style.right = '10px';
+                    debugCanvas.style.border = '2px solid #00ff00';
+                    debugCanvas.style.zIndex = '9999';
+                    debugCanvas.id = 'debug-canvas';
+                    
+                    // Remove existing debug canvas
+                    const existing = document.getElementById('debug-canvas');
+                    if (existing) existing.remove();
+                    
+                    const debugCtx = debugCanvas.getContext('2d');
+                    debugCtx.drawImage(this.canvas, 0, 0, debugCanvas.width, debugCanvas.height);
+                    
+                    document.body.appendChild(debugCanvas);
+                    console.log('🖼️ Debug preview shown in top-right corner');
+                } catch (debugError) {
+                    console.warn('Debug canvas failed:', debugError);
+                }
             }
             
             // Try primary decode method
@@ -234,6 +259,24 @@ class QRScanner {
                 }
             }
             
+            // Try with contrast enhancement (every 10th frame)
+            if (this.decodeAttempts % 10 === 5) {
+                try {
+                    const enhancedImageData = this.enhanceContrast(imageData);
+                    const result = this.codeReader.decodeFromImageData(enhancedImageData);
+                    
+                    if (result && result.text) {
+                        console.log('✅ QR Code detected (enhanced):', result.text);
+                        this.updateStatus('QR-код найден!');
+                        this.stopScanning();
+                        onQRDetected?.(result.text);
+                        return;
+                    }
+                } catch (enhancedError) {
+                    // Ignore enhanced errors - it's experimental
+                }
+            }
+            
         } catch (error) {
             console.error('❌ QR scan frame error:', error);
             this.updateStatus('Ошибка сканирования: ' + error.message);
@@ -257,6 +300,27 @@ class QRScanner {
             this.statusElement.textContent = message;
         }
         console.log('Scanner status:', message);
+    }
+
+    // Enhance contrast for better QR detection
+    enhanceContrast(imageData) {
+        const data = new Uint8ClampedArray(imageData.data);
+        const factor = 1.5; // Contrast multiplier
+        const intercept = 128 * (1 - factor);
+        
+        for (let i = 0; i < data.length; i += 4) {
+            // Convert to grayscale and enhance contrast
+            const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+            const enhanced = Math.max(0, Math.min(255, gray * factor + intercept));
+            
+            // Apply to all RGB channels
+            data[i] = enhanced;     // R
+            data[i + 1] = enhanced; // G  
+            data[i + 2] = enhanced; // B
+            // Alpha stays the same: data[i + 3]
+        }
+        
+        return new ImageData(data, imageData.width, imageData.height);
     }
 
     // Get camera list (for future camera selection feature)
