@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nook Waiter - Система официанта</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="logo">
+                <h1>🍽️ Nook Waiter</h1>
+                <p>Система для официантов</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="phone">Телефон</label>
+                    <input type="tel" id="phone" placeholder="+7 (999) 123-45-67" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" placeholder="Введите пароль" required>
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+            </form>
+            <div id="login-error" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-screen" class="screen">
+        <header class="app-header">
+            <div class="header-left">
+                <h2>Мои столы</h2>
+                <span id="staff-name" class="staff-info"></span>
+            </div>
+            <div class="header-right">
+                <button id="scan-guest-btn" class="btn-primary">
+                    <i class="fas fa-qrcode"></i> Сканировать гостя
+                </button>
+                <button id="logout-btn" class="btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Active Tables -->
+        <div id="tables-container" class="tables-container">
+            <div id="tables-list" class="tables-list">
+                <!-- Tables will be loaded here -->
+            </div>
+        </div>
+
+        <!-- No Active Tables -->
+        <div id="no-tables" class="empty-state">
+            <i class="fas fa-coffee"></i>
+            <h3>Нет активных столов</h3>
+            <p>Отсканируйте QR-код гостя, чтобы начать обслуживание</p>
+            <button class="btn-primary" onclick="showQRScanner()">
+                <i class="fas fa-qrcode"></i> Сканировать QR-код
+            </button>
+        </div>
+    </div>
+
+    <!-- QR Scanner Screen -->
+    <div id="qr-scanner-screen" class="screen fullscreen">
+        <div class="scanner-container">
+            <div class="scanner-header">
+                <button id="close-scanner-btn" class="btn-icon">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3>Сканируйте QR-код гостя</h3>
+            </div>
+            
+            <div class="scanner-area">
+                <video id="qr-video" class="scanner-video"></video>
+                <canvas id="qr-canvas" class="scanner-canvas"></canvas>
+                <div class="scanner-overlay">
+                    <div class="scanner-frame"></div>
+                </div>
+                <div class="scanner-instructions">
+                    Наведите камеру на QR-код гостя
+                </div>
+            </div>
+
+            <div class="scanner-fallback">
+                <button id="manual-input-btn" class="btn-secondary">
+                    <i class="fas fa-keyboard"></i> Ввести телефон вручную
+                </button>
+            </div>
+
+            <div id="scanner-status" class="scanner-status"></div>
+        </div>
+    </div>
+
+    <!-- Guest Profile Screen -->
+    <div id="guest-profile-screen" class="screen">
+        <div class="profile-container">
+            <div class="profile-header">
+                <button id="back-to-dashboard-btn" class="btn-icon">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="profile-title">
+                    <h2 id="guest-name">Профиль гостя</h2>
+                    <span id="guest-phone" class="guest-phone"></span>
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <!-- Guest Stats -->
+                <div class="profile-section">
+                    <h3><i class="fas fa-chart-line"></i> Статистика</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-visits">-</div>
+                            <div class="stat-label">Визитов</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avg-check">-</div>
+                            <div class="stat-label">Средний чек</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="last-visit">-</div>
+                            <div class="stat-label">Дней назад</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="price-tier">-</div>
+                            <div class="stat-label">Сегмент</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts -->
+                <div id="alerts-section" class="profile-section alerts-section">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Важно</h3>
+                    <div id="alerts-list" class="alerts-list"></div>
+                </div>
+
+                <!-- Preferences -->
+                <div id="preferences-section" class="profile-section">
+                    <h3><i class="fas fa-heart"></i> Предпочтения</h3>
+                    <div id="preferences-list" class="preferences-list"></div>
+                </div>
+
+                <!-- Available Offers -->
+                <div id="offers-section" class="profile-section">
+                    <h3><i class="fas fa-gift"></i> Доступные предложения</h3>
+                    <div id="offers-list" class="offers-list"></div>
+                </div>
+
+                <!-- Recent Notes -->
+                <div id="notes-section" class="profile-section">
+                    <h3><i class="fas fa-sticky-note"></i> Заметки</h3>
+                    <div id="notes-list" class="notes-list"></div>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button id="start-visit-btn" class="btn-primary btn-large">
+                    <i class="fas fa-play"></i> Начать обслуживание
+                </button>
+                <button id="add-note-btn" class="btn-secondary">
+                    <i class="fas fa-plus"></i> Добавить заметку
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Input Modal -->
+    <div id="manual-input-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Введите телефон гостя</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="tel" id="manual-phone" placeholder="+7 (999) 123-45-67" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button id="manual-search-btn" class="btn-primary">Найти гостя</button>
+                <button class="modal-close btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visit Start Modal -->
+    <div id="visit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Начать обслуживание</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="table-number">Номер стола</label>
+                    <input type="text" id="table-number" placeholder="Например: 12" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="party-size">Количество гостей</label>
+                    <input type="number" id="party-size" value="1" min="1" max="20" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="occasion">Повод (опционально)</label>
+                    <select id="occasion" class="form-input">
+                        <option value="">Не указан</option>
+                        <option value="birthday">День рождения</option>
+                        <option value="business">Деловая встреча</option>
+                        <option value="date">Свидание</option>
+                        <option value="friends">С друзьями</option>
+                        <option value="family">Семья</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="confirm-visit-btn" class="btn-primary">Начать</button>
+                <button class="modal-close btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Загрузка...</div>
+    </div>
+
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+    
+    <!-- Main Application -->
+    <script src="config.js"></script>
+    <script src="api.js"></script>
+    <script src="qr-scanner.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
