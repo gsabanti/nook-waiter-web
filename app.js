@@ -35,6 +35,9 @@ class WaiterApp {
     }
 
     setupEventListeners() {
+        // Setup phone mask
+        this.setupPhoneMasks();
+        
         // Login form
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -58,6 +61,21 @@ class WaiterApp {
 
         // Modal close handlers
         this.setupModalHandlers();
+    }
+
+    setupPhoneMasks() {
+        // Apply phone mask to all phone input fields
+        const phoneInputs = [
+            document.getElementById('phone'),
+            document.getElementById('manual-phone')
+        ];
+        
+        const phoneMask = new PhoneMask();
+        phoneInputs.forEach(input => {
+            if (input) {
+                phoneMask.applyMask(input);
+            }
+        });
     }
 
     setupModalHandlers() {
@@ -108,12 +126,20 @@ class WaiterApp {
 
     // Authentication
     async handleLogin() {
-        const phone = document.getElementById('phone').value;
+        const phoneInput = document.getElementById('phone').value;
         const password = document.getElementById('password').value;
         const errorElement = document.getElementById('login-error');
         
-        if (!phone || !password) {
+        if (!phoneInput || !password) {
             this.showError(errorElement, 'Введите телефон и пароль');
+            return;
+        }
+
+        // Normalize phone number
+        const phone = PhoneMask.normalizePhone(phoneInput);
+        
+        if (!PhoneMask.isValid(phone)) {
+            this.showError(errorElement, 'Неверный формат телефона');
             return;
         }
 
@@ -288,10 +314,18 @@ class WaiterApp {
     }
 
     async searchGuestByPhone() {
-        const phone = document.getElementById('manual-phone').value.trim();
+        const phoneInput = document.getElementById('manual-phone').value.trim();
         
-        if (!phone) {
+        if (!phoneInput) {
             alert('Введите номер телефона');
+            return;
+        }
+
+        // Normalize phone number
+        const phone = PhoneMask.normalizePhone(phoneInput);
+        
+        if (!PhoneMask.isValid(phone)) {
+            alert('Неверный формат телефона');
             return;
         }
 

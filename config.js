@@ -12,23 +12,23 @@ const CONFIG = {
     // QR Scanner settings
     QR_SCANNER: {
         // How often to scan for QR codes (milliseconds)
-        SCAN_INTERVAL: 100,
+        SCAN_INTERVAL: 250, // Slower for better performance
         
         // Video constraints for camera
         VIDEO_CONSTRAINTS: {
             video: {
                 facingMode: 'environment', // Use back camera on mobile
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+                width: { ideal: 1280, max: 1920 },
+                height: { ideal: 720, max: 1080 }
             }
         },
         
-        // QR detection area (as fraction of video size)
+        // QR detection area (as fraction of video size)  
         SCAN_AREA: {
-            x: 0.1,
-            y: 0.1,
-            width: 0.8,
-            height: 0.8
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0
         }
     },
     

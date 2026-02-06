@@ -18,15 +18,29 @@ class QRScanner {
     async initializeReader() {
         // Wait for ZXing library to load
         if (typeof ZXing === 'undefined') {
+            console.log('Waiting for ZXing library...');
             setTimeout(() => this.initializeReader(), 100);
             return;
         }
 
         try {
+            // Create multiple format reader for better compatibility
             this.codeReader = new ZXing.BrowserMultiFormatReader();
-            console.log('QR Scanner initialized');
+            
+            // Test if reader is working
+            console.log('QR Scanner initialized successfully');
+            console.log('ZXing version:', ZXing.version || 'unknown');
+            
         } catch (error) {
             console.error('Failed to initialize QR scanner:', error);
+            
+            // Try alternative initialization
+            try {
+                this.codeReader = new ZXing.BrowserQRCodeReader();
+                console.log('QR Scanner initialized with QR-only reader');
+            } catch (altError) {
+                console.error('All QR scanner initialization methods failed:', altError);
+            }
         }
     }
 
@@ -135,34 +149,57 @@ class QRScanner {
             // Draw current video frame to canvas
             context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             
-            // Get image data from scan area
-            const scanArea = NOOK_CONFIG.QR_SCANNER.SCAN_AREA;
-            const x = Math.floor(this.canvas.width * scanArea.x);
-            const y = Math.floor(this.canvas.height * scanArea.y);
-            const width = Math.floor(this.canvas.width * scanArea.width);
-            const height = Math.floor(this.canvas.height * scanArea.height);
+            // Get full canvas image data for better detection
+            const imageData = context.getImageData(0, 0, this.canvas.width, this.canvas.height);
             
-            const imageData = context.getImageData(x, y, width, height);
-            
-            // Try to decode QR code
-            const code = this.codeReader.decodeFromImageData(imageData);
-            
-            if (code && code.text) {
-                this.updateStatus('QR-код найден!');
-                console.log('QR Code detected:', code.text);
+            // Try to decode QR code using ZXing
+            try {
+                const result = this.codeReader.decodeFromImageData(imageData);
                 
-                // Stop scanning
-                this.stopScanning();
-                
-                // Callback with result
-                onQRDetected?.(code.text);
+                if (result && result.text) {
+                    this.updateStatus('QR-код найден!');
+                    console.log('QR Code detected:', result.text);
+                    
+                    // Stop scanning
+                    this.stopScanning();
+                    
+                    // Callback with result
+                    onQRDetected?.(result.text);
+                    return;
+                }
+            } catch (decodeError) {
+                // Try alternative method with luminance source
+                try {
+                    const luminanceSource = new ZXing.RGBLuminanceSource(
+                        imageData.data,
+                        this.canvas.width,
+                        this.canvas.height
+                    );
+                    const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+                    const result = this.codeReader.decode(binaryBitmap);
+                    
+                    if (result && result.text) {
+                        this.updateStatus('QR-код найден!');
+                        console.log('QR Code detected (alt method):', result.text);
+                        
+                        // Stop scanning
+                        this.stopScanning();
+                        
+                        // Callback with result
+                        onQRDetected?.(result.text);
+                        return;
+                    }
+                } catch (altError) {
+                    // Both methods failed, continue scanning
+                    if (altError.name !== 'NotFoundException' && altError.message !== 'No QR code found') {
+                        console.debug('QR decode attempt failed:', altError.message);
+                    }
+                }
             }
             
         } catch (error) {
-            // ZXing throws errors when no QR code is found, which is normal
-            if (error.name !== 'NotFoundException') {
-                console.error('QR scan error:', error);
-            }
+            console.error('QR scan frame error:', error);
+            onError?.(error);
         }
     }
 

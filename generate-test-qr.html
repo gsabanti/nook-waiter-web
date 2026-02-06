@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор тестовых QR-кодов для Nook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .qr-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .qr-code {
+            margin: 20px auto;
+        }
+        h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .code {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Тестовые QR-коды для Nook Waiter</h1>
+        
+        <div class="qr-section">
+            <h2>1. Простой Guest ID</h2>
+            <p>UUID гостя в простом формате</p>
+            <div id="qr1" class="qr-code"></div>
+            <div class="code" id="code1">00000000-1111-4000-8000-000000000001</div>
+            <button onclick="generateQR('qr1', 'code1')">Генерировать QR</button>
+        </div>
+        
+        <div class="qr-section">
+            <h2>2. Закодированный JSON</h2>
+            <p>Base64-кодированный JSON с данными гостя</p>
+            <div id="qr2" class="qr-code"></div>
+            <div class="code" id="code2">encoded-json-will-be-here</div>
+            <button onclick="generateEncodedQR('qr2', 'code2')">Генерировать QR</button>
+        </div>
+        
+        <div class="qr-section">
+            <h2>3. Тестовая строка</h2>
+            <p>Простая тестовая строка для проверки сканера</p>
+            <div id="qr3" class="qr-code"></div>
+            <div class="code" id="code3">TEST_NOOK_WAITER_QR_SCANNER</div>
+            <button onclick="generateQR('qr3', 'code3')">Генерировать QR</button>
+        </div>
+
+        <div class="qr-section">
+            <h2>📱 Как использовать</h2>
+            <ol>
+                <li>Нажмите на кнопку "Генерировать QR" под любым кодом</li>
+                <li>Откройте <a href="https://sabanti.tech/waiter/" target="_blank">https://sabanti.tech/waiter/</a></li>
+                <li>Войдите с тестовыми данными: <code>+7 (999) 999-99-99</code> / <code>waiter123</code></li>
+                <li>Нажмите "Сканировать гостя"</li>
+                <li>Направьте камеру на QR-код на этой странице</li>
+                <li>Проверьте, что QR-код распознается</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- QR Code Generation Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <script>
+        function generateQR(containerId, codeId) {
+            const text = document.getElementById(codeId).textContent;
+            const container = document.getElementById(containerId);
+            
+            // Clear previous QR code
+            container.innerHTML = '';
+            
+            // Generate QR code
+            QRCode.toCanvas(container, text, {
+                width: 200,
+                height: 200,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR Generation error:', error);
+                    container.innerHTML = '<p style="color: red;">Ошибка генерации QR-кода</p>';
+                } else {
+                    console.log('QR code generated successfully');
+                }
+            });
+        }
+        
+        function generateEncodedQR(containerId, codeId) {
+            // Create test JSON data
+            const testData = {
+                guest_id: "00000000-2222-4000-8000-000000000002",
+                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h from now
+                type: "nook_guest",
+                name: "Тест Гость"
+            };
+            
+            // Encode to base64
+            const encoded = btoa(JSON.stringify(testData));
+            
+            // Update code display
+            document.getElementById(codeId).textContent = encoded;
+            
+            // Generate QR
+            generateQR(containerId, codeId);
+        }
+        
+        // Auto-generate all QR codes on load
+        window.addEventListener('load', () => {
+            generateQR('qr1', 'code1');
+            generateEncodedQR('qr2', 'code2');
+            generateQR('qr3', 'code3');
+        });
+    </script>
+</body>
+</html>
