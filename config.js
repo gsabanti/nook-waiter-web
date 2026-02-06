@@ -6,8 +6,8 @@ const CONFIG = {
     // Development mode (set to false for production)
     DEV_MODE: true,
     
-    // Default restaurant ID (should be set per deployment)
-    DEFAULT_RESTAURANT_ID: 'test-restaurant-123',
+    // Default restaurant ID (should be set per deployment)  
+    DEFAULT_RESTAURANT_ID: 'b5eb9327-a738-446c-b097-acc7f3332381', // Richy Richy
     
     // QR Scanner settings
     QR_SCANNER: {
