@@ -135,11 +135,11 @@ class WaiterApp {
             return;
         }
 
-        // Use phone as formatted by mask (don't normalize for login)
-        const phone = phoneInput.trim();
+        // Normalize phone number for API
+        const phone = PhoneMask.normalizePhone(phoneInput);
         
-        if (!phone) {
-            this.showError(errorElement, 'Введите номер телефона');
+        if (!PhoneMask.isValid(phone)) {
+            this.showError(errorElement, 'Неверный формат телефона');
             return;
         }
 
