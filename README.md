@@ -204,6 +204,45 @@ npx serve .
 - **Telegram:** @nook_support
 - **GitHub Issues:** https://github.com/gsabanti/nook-waiter-web/issues
 
+## 🔄 Versioning & Cache Management
+
+### Automatic Versioning System
+
+**Problem:** Browser caching prevents updates from showing immediately.
+**Solution:** Timestamp-based cache busting.
+
+### Development Workflow
+
+**Smart Commit (Recommended):**
+```bash
+./commit.sh "Your commit message"
+```
+Automatically:
+- Updates version numbers (`?v=MMDDHHММ`)
+- Copies to production
+- Git commit and push with prompts
+
+**Manual Version Update:**
+```bash
+./update-version.sh
+cp *.js *.html /var/www/sabanti_tech/html/waiter/
+```
+
+**Production Deployment:**
+```bash
+sudo ./deploy.sh  # Full deployment with auto-versioning
+```
+
+### Versioned Files
+- `config.js?v=TIMESTAMP`
+- `phone-mask.js?v=TIMESTAMP`
+- `api.js?v=TIMESTAMP` 
+- `qr-scanner.js?v=TIMESTAMP`
+- `app.js?v=TIMESTAMP`
+- `styles.css?v=TIMESTAMP`
+
+**Always update versions when making changes to avoid cache issues!** 🚨
+
 ---
 
 Создано для системы [Nook](https://nook.app) - платформы лояльности нового поколения 🚀

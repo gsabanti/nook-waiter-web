@@ -56,6 +56,28 @@ echo "⚙️  Updating configuration..."
 sed -i 's/DEV_MODE: true/DEV_MODE: false/g' "$DEPLOY_PATH/config.js"
 sed -i 's/DEBUG: true/DEBUG: false/g' "$DEPLOY_PATH/config.js"
 
+# Update version numbers for cache busting
+echo "🔄 Updating version numbers for cache busting..."
+cd "$DEPLOY_PATH"
+if [ -f "update-version.sh" ]; then
+    chmod +x update-version.sh
+    ./update-version.sh
+    echo "✅ Version numbers updated"
+else
+    # Manual version update if script missing
+    TIMESTAMP=$(date +%m%d%H%M)
+    VERSION="v=$TIMESTAMP"
+    echo "📋 Manually updating to version: $VERSION"
+    
+    sed -i "s/\?v=[0-9]\{8\}/?$VERSION/g" index.html || true
+    sed -i "s/config\.js\"/config.js?$VERSION\"/g" index.html || true
+    sed -i "s/phone-mask\.js\"/phone-mask.js?$VERSION\"/g" index.html || true
+    sed -i "s/api\.js\"/api.js?$VERSION\"/g" index.html || true
+    sed -i "s/qr-scanner\.js\"/qr-scanner.js?$VERSION\"/g" index.html || true
+    sed -i "s/app\.js\"/app.js?$VERSION\"/g" index.html || true
+    sed -i "s/styles\.css\"/styles.css?$VERSION\"/g" index.html || true
+fi
+
 # Check nginx configuration
 if nginx -t; then
     echo "✅ Nginx configuration is valid"
