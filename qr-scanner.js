@@ -168,14 +168,24 @@ class QRScanner {
         }
 
         try {
-            const context = this.canvas.getContext('2d');
+            const context = this.canvas.getContext('2d', { willReadFrequently: true });
             
             // Draw current video frame to canvas
             context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             
             // Get image data
             const imageData = context.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            console.debug('🖼️ Canvas size:', this.canvas.width, 'x', this.canvas.height);
+            
+            // Add periodic debug info (every 2 seconds)
+            if (!this.lastDebugTime || (Date.now() - this.lastDebugTime) > 2000) {
+                console.log('🔍 Scanning...', {
+                    canvas: `${this.canvas.width}x${this.canvas.height}`,
+                    video: `${this.video.videoWidth}x${this.video.videoHeight}`,
+                    readyState: this.video.readyState,
+                    imageDataLength: imageData.data.length
+                });
+                this.lastDebugTime = Date.now();
+            }
             
             // Try primary decode method
             try {
@@ -189,15 +199,18 @@ class QRScanner {
                     return;
                 }
             } catch (decodeError) {
-                // Not an error - just no QR code found
-                if (decodeError.name !== 'NotFoundException') {
-                    console.debug('🔍 Primary decode failed:', decodeError.message);
+                // Log first few decode attempts for debugging
+                if (!this.decodeAttempts) this.decodeAttempts = 0;
+                this.decodeAttempts++;
+                
+                if (this.decodeAttempts <= 3 && decodeError.name !== 'NotFoundException') {
+                    console.debug(`🔍 Decode attempt ${this.decodeAttempts}:`, decodeError.name, decodeError.message);
                 }
             }
             
             // Try alternative method with ZXing primitives
             try {
-                if (typeof ZXing.MultiFormatReader !== 'undefined') {
+                if (typeof ZXing.MultiFormatReader !== 'undefined' && typeof ZXing.RGBLuminanceSource !== 'undefined') {
                     const reader = new ZXing.MultiFormatReader();
                     const luminanceSource = new ZXing.RGBLuminanceSource(
                         imageData.data,
@@ -216,8 +229,8 @@ class QRScanner {
                     }
                 }
             } catch (altError) {
-                if (altError.name !== 'NotFoundException') {
-                    console.debug('🔍 Alternative decode failed:', altError.message);
+                if (this.decodeAttempts <= 3 && altError.name !== 'NotFoundException') {
+                    console.debug('🔍 Alternative decode failed:', altError.name, altError.message);
                 }
             }
             
